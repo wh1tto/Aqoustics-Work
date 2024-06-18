@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 app = Flask(__name__)
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# ALLOWED_EXTENSIONS = set(['wav', 'mp3'])
+
 
 def process_audio(file_path):
     # Load the audio file
@@ -93,7 +95,19 @@ def upload_file():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(file_path)
         timestamps = process_audio(file_path)
-        return render_template('result.html', tables=[timestamps], titles=timestamps.columns.values)
+        
+        # Save the DataFrame to a session or file if necessary
+        timestamps.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'timestamps.csv'))
+
+        return "File uploaded successfully"  # Respond to Dropzone.js
+
+@app.route('/result')
+def result():
+    # Read the DataFrame from the session or file
+    # TODO: TRY DO THIS WITHOUT READING FROM FILE
+    timestamps = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'timestamps.csv'))
+
+    return render_template('result.html', tables=[timestamps], titles=timestamps.columns.values)
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):

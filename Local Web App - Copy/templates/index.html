@@ -4,12 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Audio File</title>
+    
+    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+    
+    <script>
+        Dropzone.options.myDropzone = {
+            paramName: "file", // The name that will be used to transfer the file
+            maxFilesize: 50, // MB
+            acceptedFiles: 'audio/*',
+            init: function() {
+                this.on("success", function(file, response) { 
+                    window.location.href = "/result"; // Redirect to the result page
+                });
+            }
+        };
+    </script>
 </head>
 <body>
     <h1>Upload Audio File</h1>
-    <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <input type="submit" value="Upload">
-    </form>
+    
+    <form action="{{ url_for('upload_file') }}" class="dropzone" id="myDropzone"></form>
+    
 </body>
 </html>
