@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template, redirect, url_for, session
 import os
 import pandas as pd
 import soundfile as sf
@@ -12,10 +12,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 app = Flask(__name__)
+app.secret_key = 'YSL'
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # ALLOWED_EXTENSIONS = set(['wav', 'mp3'])
-
 
 def process_audio(file_path):
     # Load the audio file
@@ -86,29 +86,35 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    # TODO: Add multiple files upload, call method multiple times for each file, and concatenate the DataFrames. Also add data from form field (hopespot) to the DataFrame
+    location = request.form.get('location')
+    
     if 'file' not in request.files:
         return redirect(request.url)
     file = request.files['file']
     if file.filename == '':
         return redirect(request.url)
     if file:
+        all_timestamps = []
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(file_path)
         timestamps = process_audio(file_path)
-        
-        # Save the DataFrame to a session or file if necessary
-        timestamps.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'timestamps.csv'))
+        all_timestamps.append(timestamps)
 
-        return "File uploaded successfully"  # Respond to Dropzone.js
+        
+        session['all_timestamps'] = [df.to_dict(orient='records') for df in all_timestamps]
+        session['titles'] = timestamps.columns.values.tolist()
+        session['location'] = location
+        
+        
+        return redirect(url_for('result'))
 
 @app.route('/result')
 def result():
-    # Read the DataFrame from the session or file
-    # TODO: TRY DO THIS WITHOUT READING FROM FILE
-    timestamps = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'timestamps.csv'))
-
-    return render_template('result.html', tables=[timestamps], titles=timestamps.columns.values)
+    all_timestamps = [pd.DataFrame(data) for data in session.get('all_timestamps', [])]
+    titles = session.get('titles', [])
+    location = session.get('location', '')
+    
+    return render_template('result.html', tables=all_timestamps, titles=titles, location=location)
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
