@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timestamps Result</title>
+    <style>
+        .data {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .data th, .data td {
+            border: 1px solid black;
+            padding: 8px;
+        }
+        .data th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Timestamps of Sounds Below 1000Hz</h1>
+    <div>
+        <table class="data">
+            <thead>
+                <tr>
+                    <th>Begin (s)</th>
+                    <th>End (s)</th>
+                    <th>Audio Clip</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for index, row in tables[0].iterrows() %}
+                <tr>
+                    <td>{{ row['begin'] }}</td>
+                    <td>{{ row['end'] }}</td>
+                    <td>
+                        <audio controls>
+                            <source src="{{ url_for('static', filename='uploads/' ~ row['audio_clip']) }}" type="audio/wav">
+                            Your browser does not support the audio element.
+                        </audio>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <a href="{{ url_for('index') }}">Upload another file</a>
+</body>
+</html>
