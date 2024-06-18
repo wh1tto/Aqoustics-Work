@@ -3,16 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Upload Audio File</title>
     
     <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+    <style>
+        body {
+            background: rgb(0,8,37);
+            background: radial-gradient(circle, rgba(0,8,37,1) 0%, rgba(40,18,164,1) 51%, rgba(18,27,148,1) 60%, rgba(28,56,187,1) 65%, rgba(16,41,175,1) 68%, rgba(60,30,196,1) 78%, rgba(0,8,37,1) 90%); 
+            height: 100vh;
+            color: white; /* Optional: Change text color to contrast with the background */
+            font-family: Arial, sans-serif; /* Optional: Change font family */
+        }
+        .container{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 250px; /* Adjust this value to move the Dropzone down */
+        }
+        .dropzone{
+            width: 300px; /* Set the width of the circle */
+            height: 300px; /* Set the height of the circle */
+            border-radius: 50%; /* Make it circular */
+            border: 2px dashed #ffffff; /* Example of custom border color */
+            background: rgba(255, 255, 255, 0.1); /* Optional: Semi-transparent background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .dz-message{
+            color: white; /* Optional: Change text color to contrast with the background */
+        }
+    </style>
     
     <script>
         Dropzone.options.myDropzone = {
             paramName: "file", // The name that will be used to transfer the file
             maxFilesize: 50, // MB
             acceptedFiles: 'audio/*',
+            dictDefaultMessage: "Drop audio files here or click to upload",
+            uploadMultiple: false,
+
             init: function() {
                 this.on("success", function(file, response) { 
                     window.location.href = "/result"; // Redirect to the result page
@@ -22,9 +55,14 @@
     </script>
 </head>
 <body>
-    <h1>Upload Audio File</h1>
-    <!-- //TODO: Add column for link to hopespot / location of the recording , if defined -->
-    <form action="{{ url_for('upload_file') }}" class="dropzone" id="myDropzone"></form>
-    
+    <h1 style="text-align:center">Upload Audio File</h1>
+    <div class="container">
+        <!-- 
+            //TODO: Add column for link to hopespot / location of the recording , if defined 
+            //TOOD: Allow for multiple files to be uploaded at once
+        -->
+
+        <form action="{{ url_for('upload_file') }}" class="dropzone" id="myDropzone">  </form>
+    </div>
 </body>
 </html>
