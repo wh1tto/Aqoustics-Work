@@ -21,32 +21,14 @@
             font-family: Arial, sans-serif;
             position: relative;
         }
-        .gain-slider {
+        .centered {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .gain-slider{
             width: 100%;
-            appearance: none;
-            height: 8px;
-            background: linear-gradient(to right, #007bff 0%, #ff0000 100%);
-            outline: none;
-            opacity: 0.7;
-            transition: opacity .2s;
-        }
-        .gain-slider:hover {
-            opacity: 1;
-        }
-        .gain-slider::-webkit-slider-thumb {
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #007bff;
-            cursor: pointer;
-            border-radius: 50%;
-        }
-        .gain-slider::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            background: #007bff;
-            cursor: pointer;
-            border-radius: 50%;
         }
     </style>
 
@@ -69,19 +51,9 @@
             // Find the corresponding gain slider
             var gainSlider = document.querySelector('input[data-audio-id="' + audioElement.id + '"]');
 
-            // Function to update the slider background
-            function updateSliderBackground(slider) {
-                var value = (slider.value - slider.min) / (slider.max - slider.min) * 100;
-                slider.style.background = `linear-gradient(to right, #007bff ${value}%, #ff0000 ${value}%)`;
-            }
-
-            // Initial background update
-            updateSliderBackground(gainSlider);
-
             // Attach an input event listener to the gain slider
             gainSlider.addEventListener('input', function() {
                 gainNode.gain.value = this.value;
-                updateSliderBackground(this);
             });
         });
         </script>
@@ -96,6 +68,7 @@
                     <th>End (s)</th>
                     <th>Audio Clip</th>
                     <th>Gain</th>
+                    <th>Download</th>
                     <th>Correct?</th>
                     <th>Hopespot</th>
                 </tr>
@@ -105,7 +78,7 @@
                 <tr>
                     <td>{{ row['begin'] }}</td>
                     <td>{{ row['end'] }}</td>
-                    <td>
+                    <td class="centered">
                         <audio controls>
                             <source src="{{ url_for('static', filename='uploads/' ~ row['audio_clip']) }}" type="audio/wav">
                             Your browser does not support the audio element.
@@ -115,12 +88,19 @@
                         <input type="range" min="1" max="10" step="0.1" value="1" id="gain-slider-{{ index }}" data-audio-id="audio-{{ index }}" class="gain-slider">
                     </td>
                     <td>
+                        <a href="{{ url_for('static', filename='uploads/' ~ row['audio_clip']) }}" download>
+                            <button>Download Clip</button>
+                        </a>
+                    </td>
+                    <td>
                         <button>Yes</button>
                         <button>No</button>
                     </td>
                     <td>
                         <a href="">Link to hopespot {{ location }}</a>
                     </td>
+
+                    
                 </tr>
                 {% endfor %}
 
