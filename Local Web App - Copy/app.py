@@ -86,6 +86,7 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    # TODO: Add multiple files upload, call method multiple times for each file, and concatenate the DataFrames. Also add data from form field (hopespot) to the DataFrame
     if 'file' not in request.files:
         return redirect(request.url)
     file = request.files['file']
