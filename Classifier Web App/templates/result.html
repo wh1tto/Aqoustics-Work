@@ -67,7 +67,6 @@
     </style>
 
     <script>
-        //TODO: Place link in table according to output from script.py
         document.querySelectorAll('audio').forEach(function(audioElement) {
             // Create an audio context
             var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -93,7 +92,7 @@
         </script>
 </head>
 <body>
-    <h1>Timestamps of Sounds Below 1000Hz</h1>
+    <h1 style="text-align:center">Timestamps of Sounds Below 1000Hz</h1>
     <div>
         <table class="data">
             <thead>
@@ -133,16 +132,8 @@
                     <td>
                         <a href="{{ locationLink }}">Link to {{ location }} Hopespot</a>
                     </td>
-
-                    
                 </tr>
                 {% endfor %}
-
-                <!--
-                //TODO: Add Column for is this correct or not (2 buttons) this will be used to help guide the ML model in the future 
-                //TODO: Add column for link to hopespot / location of the recording , if defined 
-                -->
-
             </tbody>
         </table>
     </div>
