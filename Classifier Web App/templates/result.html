@@ -30,6 +30,40 @@
         .gain-slider{
             width: 100%;
         }
+
+        #submit-all {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #submit-all:hover {
+            background-color: #0056b3;
+        }
+
+        .container{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 100px;
+        }
+        a:link {
+            color: pink;
+            background-color: transparent;
+            text-decoration: none;
+        }
+        
+        a:visited {
+            color: pink;
+            background-color: transparent;
+            text-decoration: none;
+        }
+
     </style>
 
     <script>
@@ -97,7 +131,7 @@
                         <button>No</button>
                     </td>
                     <td>
-                        <a href="">Link to hopespot {{ location }}</a>
+                        <a href="{{ locationLink }}">Link to {{ location }} Hopespot</a>
                     </td>
 
                     
@@ -112,6 +146,9 @@
             </tbody>
         </table>
     </div>
-    <a href="{{ url_for('index') }}">Upload another file</a>
+    <div class="container">
+        <button type="button" onclick="location.href='{{ url_for('index') }}'" id="submit-all">Upload another file</button>
+    </div>
+    <!-- <a href="{{ url_for('index') }}">Upload another file</a> -->
 </body>
 </html>
