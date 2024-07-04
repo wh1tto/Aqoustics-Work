@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timestamps Result</title>
+    <style>
+        .data {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .data th, .data td {
+            border: 1px solid black;
+            padding: 8px;
+        }
+        body {
+            background-image: radial-gradient(circle, #2a2094, #281e9f, #251caa, #2119b5, #1c15c0);
+            height: 100vh;
+            overflow: auto;
+            color: white;
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
+        .centered {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .gain-slider{
+            width: 100%;
+        }
+
+        #submit-all {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #submit-all:hover {
+            background-color: #0056b3;
+        }
+
+        .container{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        a:link {
+            color: pink;
+            background-color: transparent;
+            text-decoration: none;
+        }
+        
+        a:visited {
+            color: pink;
+            background-color: transparent;
+            text-decoration: none;
+        }
+
+        /* Slideshow container */
+        .slideshow-container {
+            max-width: 1000px;
+            position: relative;
+            margin: auto;
+        }
+
+        .mySlides img {
+            width: 100%;  /* Ensure images fill the slide */
+            display: block; /* Removes bottom margin/gap */
+        }
+        
+        .mySlides {
+            position: relative;
+            width: 100%; /* Ensures the slide container fits its content */
+        }
+
+        /* Next & previous buttons */
+        .prev, .next {
+            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            width: auto;
+            margin-top: -22px;
+            padding: 16px;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            transition: 0.6s ease;
+            border-radius: 0 3px 3px 0;
+            user-select: none;
+        }
+
+        /* Position the "next button" to the right */
+        .next {
+            right: 0;
+            border-radius: 3px 0 0 3px;
+        }
+
+        /* Fading animation */
+        .fade {
+            animation-name: fade;
+            animation-duration: 1.5s;
+        }
+
+        @keyframes fade {
+            from {opacity: .4} 
+            to {opacity: 1}
+        }
+
+        .slideshowText {
+            color: #f2f2f2;
+            font-size: 15px;
+            padding: 8px 12px;
+            position: absolute;
+            bottom: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+        }
+
+
+    </style>
+
+    <script>
+        document.querySelectorAll('audio').forEach(function(audioElement) {
+            // Create an audio context
+            var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            // Create a media element source
+            var source = audioCtx.createMediaElementSource(audioElement);
+
+            // Create a gain node
+            var gainNode = audioCtx.createGain();
+
+            // Connect the source to the gain node and the gain node to the audio context destination
+            source.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            // Find the corresponding gain slider
+            var gainSlider = document.querySelector('input[data-audio-id="' + audioElement.id + '"]');
+
+            // Attach an input event listener to the gain slider
+            gainSlider.addEventListener('input', function() {
+                gainNode.gain.value = this.value;
+            });
+        });
+        </script>
+</head>
+<body>
+    <h1 style="text-align:center">Timestamps of Sounds Below 1000Hz</h1>
+    <div>
+        <table class="data">
+            <thead>
+                <tr>
+                    <th>Begin (s)</th>
+                    <th>End (s)</th>
+                    <th>Audio Clip</th>
+                    <th>Gain</th>
+                    <th>Download</th>
+                    <th>Correct?</th>
+                    <th>Hopespot</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for index, row in tables[0].iterrows() %}
+                <tr>
+                    <td>{{ row['begin'] }}</td>
+                    <td>{{ row['end'] }}</td>
+                    <td class="centered">
+                        <audio controls>
+                            <source src="{{ url_for('static', filename='uploads/' ~ row['audio_clip']) }}" type="audio/wav">
+                            Your browser does not support the audio element.
+                        </audio>
+                    </td>
+                    <td>
+                        <input type="range" min="1" max="10" step="0.1" value="1" id="gain-slider-{{ index }}" data-audio-id="audio-{{ index }}" class="gain-slider">
+                    </td>
+                    <td>
+                        <a href="{{ url_for('static', filename='uploads/' ~ row['audio_clip']) }}" download>
+                            <button>Download Clip</button>
+                        </a>
+                    </td>
+                    <td>
+                        <!-- #TODO: Make it so these buttons work, and change the counter in the correct json file (votes), this will be used to train the model later -->
+                        <button>Yes</button>
+                        <button>No</button>
+                    </td>
+                    <td>
+                        <a href="{{ locationLink }}">Link to {{ location }} Hopespot</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="container">
+        <button type="button" onclick="location.href='{{ url_for('index') }}'" id="submit-all">Upload another file</button>
+    </div>
+
+    <div class="slideshow-container">
+        <!-- Slideshow Images -->
+        <div class="mySlides fade">
+            <img src={{ url_for('static', filename='images/clip_0.wav_plot.png') }} style="width:100%">
+            <div class="slideshowText">Spectogram of Clip 1</div>
+        </div>
+
+        <div class="mySlides fade">
+            <img src={{ url_for('static', filename='images/clip_1.wav_plot.png') }} style="width:100%">
+            <div class="slideshowText">Spectogram of Clip 2</div>
+        </div>
+
+        <div class="mySlides fade">
+            <img src={{ url_for('static', filename='images/clip_2.wav_plot.png') }} style="width:100%">
+            <div class="slideshowText">Spectogram of Clip 3</div>
+        </div>
+
+        <div class="mySlides fade">
+            <img src={{ url_for('static', filename='images/clip_3.wav_plot.png') }} style="width:100%">
+            <div class="slideshowText">Spectogram of Clip 4</div>
+        </div>
+
+        <!-- Next and previous buttons -->
+        <a class="prev" onclick="plusSlides(-1)">&#10094;</a>
+        <a class="next" onclick="plusSlides(1)">&#10095;</a>
+    </div>
+    <script>
+        var slideIndex = 1;
+        showSlides(slideIndex);
+
+        // Next/previous controls
+        function plusSlides(n) {
+            showSlides(slideIndex += n);
+        }
+
+        // Thumbnail image controls
+        function currentSlide(n) {
+            showSlides(slideIndex = n);
+        }
+
+        function showSlides(n) {
+            var i;
+            var slides = document.getElementsByClassName("mySlides");
+            if (n > slides.length) {slideIndex = 1}    
+            if (n < 1) {slideIndex = slides.length}
+            for (i = 0; i < slides.length; i++) {
+                slides[i].style.display = "none";  
+            }
+            slides[slideIndex-1].style.display = "block";  
+        }
+
+    </script>
+</body>
+</html>
