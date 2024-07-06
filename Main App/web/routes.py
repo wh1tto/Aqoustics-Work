@@ -296,7 +296,6 @@ def hopespot(name):
 
     hopspot_link = hopespots[0].get(name)
     audio_files = get_audio_files(name)
-    print(audio_files)
     return render_template('hopespot.html', name=name, link=hopspot_link, audio_files=audio_files)
 
 # Route to display details for a specific audio recording
@@ -312,18 +311,26 @@ def audio(hopespot_name, audio_filename):
 def get_audio_files(hopespot_name):
     camel_case_hopespot_name = to_camel_case(hopespot_name)
     base_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_hopespot_name, 'audio')
-    if not os.path.exists(base_path):
+    audio_data_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_hopespot_name, 'audio_data.json')
+    
+    if not os.path.exists(base_path) or not os.path.exists(audio_data_path):
         return []
-
+    
     audio_files = []
+    with open(audio_data_path, 'r') as f:
+        audio_data = json.load(f)
+
     for folder in os.listdir(base_path):
         folder_path = os.path.join(base_path, folder)
         if os.path.isdir(folder_path):
-            audio_file = folder + ".wav"
-            audio_file_path = os.path.join(folder_path, audio_file)
-            if os.path.exists(audio_file_path):
-                audio_files.append(audio_file)
-    
+            filename = folder + '.WAV'
+            if filename in audio_data:
+                votes = audio_data[filename].get('votes', 0)
+                audio_files.append({'filename': filename, 'votes': votes})
+            elif folder + '.wav' in audio_data:
+                votes = audio_data[folder + '.wav'].get('votes', 0)
+                audio_files.append({'filename': folder + '.wav', 'votes': votes})
+
     return audio_files
 
 

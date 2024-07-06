@@ -46,18 +46,21 @@
         <thead>
             <tr>
                 <th>Filename</th>
+                <th>Votes</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for audio_file in audio_files %}
-            <tr>
-                <td>{{ audio_file }}</td>
-                <td>
-                    <a class="button" href="{{ url_for('web.result', filename=audio_file) }}">View Results</a>
-                </td>
-            </tr>
+                <tr>
+                    <td>{{ audio_file.filename }}</td>
+                    <td>{{ audio_file.votes }}</td>
+                    <td><a href="{{ url_for('web.result', filename=audio_file.filename) }}" class="button">View Results</a></td>
+                </tr>
             {% endfor %}
+            <!--
+            #TODO: Add column for score of the audio file
+            -->
         </tbody>
     </table>
 </body>
