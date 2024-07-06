@@ -330,7 +330,9 @@ def get_audio_files(hopespot_name):
             elif folder + '.wav' in audio_data:
                 votes = audio_data[folder + '.wav'].get('votes', 0)
                 audio_files.append({'filename': folder + '.wav', 'votes': votes})
-
+    
+    audio_files.sort(key=lambda x: x['votes'], reverse=True)
+    
     return audio_files
 
 
