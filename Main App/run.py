@@ -6,6 +6,7 @@ from api.routes import api_bp
 def create_app():
     app = Flask(__name__)
     
+    app.config['SECRET_KEY'] = 'water'
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static')
     
     app.register_blueprint(web_bp, url_prefix='/')

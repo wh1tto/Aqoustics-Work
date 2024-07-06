@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ name }} Hopespot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .audio-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .audio-table th, .audio-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        .audio-table th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: #4CAF50;
+            color: white;
+        }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ name }} Hopespot</h1>
+    <p><a href="{{ link }}" target="_blank">More information about this hopespot</a></p>
+
+    <h2>Audio Recordings</h2>
+    <table class="audio-table">
+        <thead>
+            <tr>
+                <th>Filename</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for audio_file in audio_files %}
+            <tr>
+                <td>{{ audio_file }}</td>
+                <td>
+                    <a class="button" href="{{ url_for('web.result', filename=audio_file) }}">View Results</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

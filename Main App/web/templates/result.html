@@ -189,7 +189,11 @@
                         </a>
                     </td>
                     <td>
-                        <!-- #TODO: Make it so these buttons work, and change the counter in the correct json file (votes), this will be used to train the model later -->
+                        <!--
+                        #TODO: Make it so these buttons work, and change the counter in the correct json file (votes), this will be used to train the model later 
+                        #TODO: Once button is clicked, change the color of the button to green or red to indicate if the user thinks the timestamp is correct or not (score should only change by 1 per session, so if the user clicks the button again, it should not change the score again)
+                        #TODO: Add another button for the whole file, to indicate if the whole file is good or not. This will be used to order the files within the hopespot
+                        -->
                         <button>Yes</button>
                         <button>No</button>
                     </td>
@@ -202,35 +206,23 @@
         </table>
     </div>
     <div class="container">
-        <button type="button" onclick="location.href='{{ url_for('index') }}'" id="submit-all">Upload another file</button>
+        <button type="button" onclick="location.href='{{ url_for('web.home') }}'" id="submit-all">Upload another file</button>
     </div>
 
     <div class="slideshow-container">
         <!-- Slideshow Images -->
-        <div class="mySlides fade">
-            <img src={{ url_for('static', filename='images/clip_0.wav_plot.png') }} style="width:100%">
-            <div class="slideshowText">Spectogram of Clip 1</div>
-        </div>
-
-        <div class="mySlides fade">
-            <img src={{ url_for('static', filename='images/clip_1.wav_plot.png') }} style="width:100%">
-            <div class="slideshowText">Spectogram of Clip 2</div>
-        </div>
-
-        <div class="mySlides fade">
-            <img src={{ url_for('static', filename='images/clip_2.wav_plot.png') }} style="width:100%">
-            <div class="slideshowText">Spectogram of Clip 3</div>
-        </div>
-
-        <div class="mySlides fade">
-            <img src={{ url_for('static', filename='images/clip_3.wav_plot.png') }} style="width:100%">
-            <div class="slideshowText">Spectogram of Clip 4</div>
-        </div>
+        {% for spectrogram in spectrograms %}
+            <div class="mySlides fade">
+                <img src="{{ url_for('static', filename=spectrogram) }}" style="width:100%">
+                <div class="slideshowText">Spectrogram of Clip {{ loop.index }}</div>
+            </div>
+        {% endfor %}
 
         <!-- Next and previous buttons -->
         <a class="prev" onclick="plusSlides(-1)">&#10094;</a>
         <a class="next" onclick="plusSlides(1)">&#10095;</a>
     </div>
+
     <script>
         var slideIndex = 1;
         showSlides(slideIndex);

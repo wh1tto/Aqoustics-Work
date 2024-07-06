@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hopespot List</title>
+</head>
+<body>
+    <h1>Hopespot List</h1>
+    <ul>
+        {% for hopespot in hopespots %}
+            {% for name, link in hopespot.items() %}
+                <li><a href="{{ url_for('web.hopespot', name=name) }}">{{ name }}</a></li>
+            {% endfor %}
+        {% endfor %}
+    </ul>
+</body>
+</html>

@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, session, Blueprint
+from flask import Flask, request, render_template, redirect, url_for, session, Blueprint, current_app as app
 import os
 import pandas as pd
 import soundfile as sf
@@ -12,6 +12,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wav
 from numpy.lib import stride_tricks
+import json
+from datetime import timedelta
+
 web_bp = Blueprint('web', __name__, template_folder='templates', static_folder='static')
 
 hopespotLinks = [
@@ -186,6 +189,7 @@ def home():
 @web_bp.route('/upload', methods=['POST'])
 def upload_file():
     location = request.form.get('location')
+    filename = request.form.get('filename')
     
     if 'file' not in request.files:
         return redirect(request.url)
@@ -195,41 +199,143 @@ def upload_file():
     if file:
         all_timestamps = []
         
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file_extension = os.path.splitext(file.filename)[1]
+        if not file_extension:
+            file_extension = '.wav'  # Default to .wav if no extension provided
+        
+        camel_case_location = to_camel_case(location)
+        full_filename = f"{filename}{file_extension}"
+        
+        # Create directory path using the filename
+        file_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_location, 'audio', filename)
+        os.makedirs(file_dir, exist_ok=True)
+        
+        # file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_location, 'audio', full_filename)
+        file_path = os.path.join(file_dir, full_filename)
         file.save(file_path)
         timestamps = process_audio(file_path)
         all_timestamps.append(timestamps)
+
+        # Load or initialize audio_data.json from the hopespot folder
+        audio_data_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_location, 'audio_data.json')
+        if os.path.exists(audio_data_path):
+            try:
+                with open(audio_data_path, 'r') as f:
+                    audio_data = json.load(f)
+            except json.JSONDecodeError:
+                # Handle empty or corrupted JSON file
+                audio_data = {}
+        else:
+            audio_data = {}
+
+        # Convert timestamps to the specified format
+        formatted_timestamps = [
+            {"start": format_timestamp(row['begin']), "end": format_timestamp(row['end']), "note": "note", "score": "3"}
+            for _, row in timestamps.iterrows()
+        ]
+
+        # Update the JSON structure
+        if full_filename not in audio_data:
+            audio_data[full_filename] = {"timestamps": formatted_timestamps, "votes": 0}
+        else:
+            audio_data[full_filename]["timestamps"].extend(formatted_timestamps)
+
+        # Write back to the audio_data.json file
+        with open(audio_data_path, 'w') as f:
+            json.dump(audio_data, f, indent=4)
 
         
         session['all_timestamps'] = [df.to_dict(orient='records') for df in all_timestamps]
         session['titles'] = timestamps.columns.values.tolist()
         session['location'] = location
+        session['filename'] = filename
         
-        # TODO: Change upload method to include date of recording. This will be used as the name of the file.
+        # TODO: Complete Repo of hopespots
         
-        return redirect(url_for('result'))
+        return redirect(url_for('web.result'))
 
 @web_bp.route('/result')
 def result():
     all_timestamps = [pd.DataFrame(data) for data in session.get('all_timestamps', [])]
     titles = session.get('titles', [])
     location = session.get('location', '')
+    filename = session.get('filename', '')
     
     locationLink = searchDict(hopespotLinks, location)
-    
-    # Search for all new files in the upload folder that begin with clip
-    # For each file create a spectogram, appending the same number as in file name (clip_0.wav, clip_1.wav, etc.)
-    for file in os.listdir(app.config['UPLOAD_FOLDER']):
-        if file.startswith('clip'):
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], file)
-            # Add plot onto the end of filename string
-            file.split(".")[0]
-            # print(file)
-            file += '_plot'
-            ims = plotstft(filepath, file)
-    
-    return render_template('result.html', tables=all_timestamps, titles=titles, location=location, locationLink=locationLink)
+    camel_case_location = to_camel_case(location)
+    audio_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_location, 'audio', filename)
 
+    spectrograms = []
+    
+    # Create a spectogram for each new clip created, appending the same number as in file name (clip_0.wav, clip_1.wav, etc.)
+    # Save the plot to the same folder as the clip
+    # TODO: Do we want spectogram to permanently save to the folder or just display on the page? (storage vs processing time/overhead)
+    for file in os.listdir(audio_folder):
+        if file.startswith('clip') and file.endswith('.wav'):
+            clip_path = os.path.join(audio_folder, file)
+            plot_path = os.path.join(audio_folder, f"{os.path.splitext(file)[0]}_plot.png")
+            plotstft(clip_path, plot_path)
+            relative_plot_path = f'hopespots/{camel_case_location}/audio/{filename}/{os.path.basename(plot_path)}'
+            spectrograms.append(relative_plot_path)
+    
+    
+    return render_template('result.html', tables=all_timestamps, titles=titles, location=location, locationLink=locationLink, spectrograms=spectrograms)
+
+# Route to list all hopespots
+@web_bp.route('/hopespots')
+def hopespots():
+    hopespots = [h for h in hopespotLinks]
+    return render_template('hopespots.html', hopespots=hopespots)
+
+# Route to display details for a specific hopespot
+@web_bp.route('/hopespot/<name>')
+def hopespot(name):
+    hopespots = [h for h in hopespotLinks if name in h]
+    if not hopespots:
+        return "Hopespot not found", 404
+
+    hopspot_link = hopespots[0].get(name)
+    audio_files = get_audio_files(name)
+    print(audio_files)
+    return render_template('hopespot.html', name=name, link=hopspot_link, audio_files=audio_files)
+
+# Route to display details for a specific audio recording
+@web_bp.route('/hopespot/<hopespot_name>/audio/<audio_filename>')
+def audio(hopespot_name, audio_filename):
+    audio_data = get_audio_data(hopespot_name, audio_filename)
+    if not audio_data:
+        return "Audio file not found", 404
+
+    return render_template('audio.html', hopespot_name=hopespot_name, audio_filename=audio_filename, audio_data=audio_data)
+
+# Utility functions
+def get_audio_files(hopespot_name):
+    camel_case_hopespot_name = to_camel_case(hopespot_name)
+    base_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_hopespot_name, 'audio')
+    if not os.path.exists(base_path):
+        return []
+
+    audio_files = []
+    for folder in os.listdir(base_path):
+        folder_path = os.path.join(base_path, folder)
+        if os.path.isdir(folder_path):
+            audio_file = folder + ".wav"
+            audio_file_path = os.path.join(folder_path, audio_file)
+            if os.path.exists(audio_file_path):
+                audio_files.append(audio_file)
+    
+    return audio_files
+
+
+def get_audio_data(hopespot_name, audio_filename):
+    base_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', hopespot_name, 'audio_data.json')
+    if not os.path.exists(base_path):
+        return None
+
+    with open(base_path) as json_file:
+        audio_data = json.load(json_file)
+    
+    return audio_data.get(audio_filename)
 
 
 def process_audio(file_path):
@@ -287,7 +393,7 @@ def process_audio(file_path):
         end_sample = int(min(len(s), (row['end'] + 0.5) * fs))
         audio_clip = s[start_sample:end_sample]
         clip_filename = f'clip_{i}.wav'
-        clip_path = os.path.join(app.config['UPLOAD_FOLDER'], clip_filename)
+        clip_path = os.path.join(os.path.dirname(file_path), clip_filename)
         sf.write(clip_path, audio_clip, fs)
         audio_clips.append(clip_filename)
 
@@ -346,7 +452,7 @@ def logscale_spec(spec, sr=44100, factor=20.):
     return newspec, freqs
 
 """ plot spectrogram"""
-def plotstft(audiopath, nameOfFile, binsize=2**10, plotpath=None, colormap="jet"):
+def plotstft(audiopath, plotLocation, binsize=2**10, plotpath=None, colormap="jet"):
     samplerate, samples = wav.read(audiopath)
 
     s = stft(samples, binsize)
@@ -374,12 +480,15 @@ def plotstft(audiopath, nameOfFile, binsize=2**10, plotpath=None, colormap="jet"
     ylocs = np.int16(np.round(np.linspace(0, freqbins-1, 10)))
     plt.yticks(ylocs, ["%.02f" % freq[i] for i in ylocs])
 
-    if plotpath:
-        plt.savefig(plotpath, bbox_inches="tight")
-    else:
-        # plt.show()
-        plt.savefig(f'static/images/{nameOfFile}.png')
-
+    plt.savefig(plotLocation, bbox_inches="tight")
     plt.clf()
 
     return ims
+
+def to_camel_case(s):
+    parts = s.split()
+    return parts[0].lower() + ''.join(word.capitalize() for word in parts[1:])
+
+def format_timestamp(seconds):
+    td = timedelta(seconds=seconds)
+    return str(td)
