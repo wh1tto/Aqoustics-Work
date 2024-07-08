@@ -207,17 +207,22 @@ def upload_file():
         full_filename = f"{filename}{file_extension}"
         
         # Create directory path using the filename
-        file_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_location, 'audio', filename)
-        os.makedirs(file_dir, exist_ok=True)
+        hopespot_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_location)
+        audio_dir = os.path.join(hopespot_dir, 'audio', filename)
+        os.makedirs(audio_dir, exist_ok=True)
         
-        # file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_location, 'audio', full_filename)
-        file_path = os.path.join(file_dir, full_filename)
+        # Initialize audio_data.json if it does not exist
+        audio_data_path = os.path.join(hopespot_dir, 'audio_data.json')
+        if not os.path.exists(audio_data_path):
+            with open(audio_data_path, 'w') as f:
+                json.dump({}, f)
+
+        file_path = os.path.join(audio_dir, full_filename)
         file.save(file_path)
         timestamps = process_audio(file_path)
         all_timestamps.append(timestamps)
 
         # Load or initialize audio_data.json from the hopespot folder
-        audio_data_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_location, 'audio_data.json')
         if os.path.exists(audio_data_path):
             try:
                 with open(audio_data_path, 'r') as f:
