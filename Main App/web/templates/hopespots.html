@@ -4,15 +4,111 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hopespot List</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+    </style>
+    <script>
+        function sortTableByColumn(table, column, asc = true) {
+            const dirModifier = asc ? 1 : -1;
+            const tBody = table.tBodies[0];
+            const rows = Array.from(tBody.querySelectorAll("tr"));
+
+            const sortedRows = rows.sort((a, b) => {
+                const aColText = a.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
+                const bColText = b.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
+
+                return aColText > bColText ? (1 * dirModifier) : (-1 * dirModifier);
+            });
+
+            while (tBody.firstChild) {
+                tBody.removeChild(tBody.firstChild);
+            }
+
+            tBody.append(...sortedRows);
+        }
+
+        function sortTableByNumber(table, column, asc = true) {
+            const dirModifier = asc ? 1 : -1;
+            const tBody = table.tBodies[0];
+            const rows = Array.from(tBody.querySelectorAll("tr"));
+
+            const sortedRows = rows.sort((a, b) => {
+                const aColNumber = parseInt(a.querySelector(`td:nth-child(${column + 1})`).textContent.trim());
+                const bColNumber = parseInt(b.querySelector(`td:nth-child(${column + 1})`).textContent.trim());
+
+                return (bColNumber - aColNumber) * dirModifier; // Changed for descending order
+            });
+
+            while (tBody.firstChild) {
+                tBody.removeChild(tBody.firstChild);
+            }
+
+            tBody.append(...sortedRows);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const table = document.querySelector("table");
+            let sortAlphabetical = true;
+
+            document.querySelector("#sort-button").addEventListener("click", () => {
+                if (sortAlphabetical) {
+                    sortTableByNumber(table, 1, true);
+                    sortAlphabetical = false;
+                    document.querySelector("#sort-button").textContent = "Sort Alphabetically";
+                } else {
+                    sortTableByColumn(table, 0, true);
+                    sortAlphabetical = true;
+                    document.querySelector("#sort-button").textContent = "Sort by Number of Clips";
+                }
+            });
+        });
+    </script>
 </head>
 <body>
     <h1>Hopespot List</h1>
-    <ul>
-        {% for hopespot in hopespots %}
-            {% for name, link in hopespot.items() %}
-                <li><a href="{{ url_for('web.hopespot', name=name) }}">{{ name }}</a></li>
+    <button id="sort-button" class="button">Sort by Number of Clips</button>
+    <table>
+        <thead>
+            <tr>
+                <th>Hopespot</th>
+                <th>Number of Clips</th>
+                <th>Favorite</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for hopespot in hopespots %}
+            <tr>
+                <td>{{ hopespot.name }}</td>
+                <td>{{ hopespot.clips_count }}</td>
+                <td><input type="checkbox" name="favorite"></td>
+                <td><a href="{{ url_for('web.hopespot', name=hopespot.name) }}" class="button">View Details</a></td>
+            </tr>
             {% endfor %}
-        {% endfor %}
-    </ul>
+        </tbody>
+    </table>
 </body>
 </html>

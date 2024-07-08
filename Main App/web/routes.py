@@ -284,7 +284,14 @@ def result():
 # Route to list all hopespots
 @web_bp.route('/hopespots')
 def hopespots():
-    hopespots = [h for h in hopespotLinks]
+    hopespots = []
+    for h in hopespotLinks:
+        name = list(h.keys())[0]
+        clips_count = len(get_audio_files_hopespots(name))
+        hopespots.append({'name': name, 'clips_count': clips_count})
+    
+    hopespots.sort(key=lambda x: x['name'])  # Initially sort by name
+    
     return render_template('hopespots.html', hopespots=hopespots)
 
 # Route to display details for a specific hopespot
@@ -335,6 +342,21 @@ def get_audio_files(hopespot_name):
     
     return audio_files
 
+def get_audio_files_hopespots(hopespot_name):
+    base_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', to_camel_case(hopespot_name), 'audio')
+    if not os.path.exists(base_path):
+        return []
+
+    audio_files = []
+    for entry in os.listdir(base_path):
+        entry_path = os.path.join(base_path, entry)
+        if os.path.isdir(entry_path):
+            audio_filename = f"{entry}.wav"
+            audio_file_path = os.path.join(entry_path, audio_filename)
+            if os.path.exists(audio_file_path):
+                audio_files.append(audio_filename)
+
+    return audio_files
 
 def get_audio_data(hopespot_name, audio_filename):
     base_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', hopespot_name, 'audio_data.json')
