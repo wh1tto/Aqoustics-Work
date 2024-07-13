@@ -255,8 +255,6 @@ def upload_file():
         session['location'] = location
         session['filename'] = filename
         
-        # TODO: Complete Repo of hopespots
-        
         return redirect(url_for('web.result'))
 
 @web_bp.route('/result')
