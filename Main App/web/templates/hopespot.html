@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ name }} Hopespot</title>
+    <title>{{ hopespot_name }} Hopespot</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -38,7 +38,7 @@
     </style>
 </head>
 <body>
-    <h1>{{ name }} Hopespot</h1>
+    <h1>{{ hopespot_name }} Hopespot</h1>
     <p><a href="{{ link }}" target="_blank">More information about this hopespot</a></p>
 
     <h2>Audio Recordings</h2>
@@ -55,7 +55,7 @@
                 <tr>
                     <td>{{ audio_file.filename }}</td>
                     <td>{{ audio_file.votes }}</td>
-                    <td><a href="{{ url_for('web.result', filename=audio_file.filename) }}" class="button">View Results</a></td>
+                    <td> <a href="{{ url_for('web.audio', hopespot_name=hopespot_name, audio_filename=audio_file.filename) }}" class="button">View Recording</a> </td>
                 </tr>
             {% endfor %}
             <!--

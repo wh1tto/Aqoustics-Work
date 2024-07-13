@@ -275,6 +275,8 @@ def result():
     # Create a spectogram for each new clip created, appending the same number as in file name (clip_0.wav, clip_1.wav, etc.)
     # Save the plot to the same folder as the clip
     # TODO: Do we want spectogram to permanently save to the folder or just display on the page? (storage vs processing time/overhead)
+    # TODO: Add new results page for individual recordings instead of using the results page, change references and add voting functionality
+    # TODO: Also add voting functionality for indiivudal clips 
     for file in os.listdir(audio_folder):
         if file.startswith('clip') and file.endswith('.wav'):
             clip_path = os.path.join(audio_folder, file)
@@ -300,24 +302,46 @@ def hopespots():
     return render_template('hopespots.html', hopespots=hopespots)
 
 # Route to display details for a specific hopespot
-@web_bp.route('/hopespot/<name>')
-def hopespot(name):
-    hopespots = [h for h in hopespotLinks if name in h]
+@web_bp.route('/hopespot/<hopespot_name>')
+def hopespot(hopespot_name):
+    
+    hopespots = [h for h in hopespotLinks if hopespot_name in h]
     if not hopespots:
         return "Hopespot not found", 404
 
-    hopspot_link = hopespots[0].get(name)
-    audio_files = get_audio_files(name)
-    return render_template('hopespot.html', name=name, link=hopspot_link, audio_files=audio_files)
+    hopespot_link = hopespots[0].get(hopespot_name)
+    audio_files = get_audio_files(hopespot_name)
+    
+    return render_template('hopespot.html', hopespot_name=hopespot_name, link=hopespot_link, audio_files=audio_files)
 
 # Route to display details for a specific audio recording
 @web_bp.route('/hopespot/<hopespot_name>/audio/<audio_filename>')
 def audio(hopespot_name, audio_filename):
+    hopespot_name = to_camel_case(hopespot_name)
     audio_data = get_audio_data(hopespot_name, audio_filename)
+    
     if not audio_data:
         return "Audio file not found", 404
 
-    return render_template('audio.html', hopespot_name=hopespot_name, audio_filename=audio_filename, audio_data=audio_data)
+    num_clips = len(audio_data['timestamps'])
+    
+    audio_filename_no_ext = os.path.splitext(audio_filename)[0]
+    
+    # Run loop over number of clips to retrieve the clip_0.wav, clip_1.wav, etc
+    # Also add the path for the spectogram for each clip (instead of .wav, use _plot.png)
+    
+    # FIXME: Make backpath work for audio -> hopespot page
+    # FIXME: Fix spectograms (wont always be in order 0-1-2-3-4, some may be 1-3-8-15-20)
+    clips = []
+    spectograms = []
+    for i in range(num_clips):
+        clip_filename = f"clip_{i}.wav"
+        clip_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', hopespot_name, 'audio', audio_filename_no_ext, clip_filename)
+        spectogram_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', hopespot_name, 'audio', audio_filename_no_ext, f"clip_{i}_plot.png")
+        clips.append(clip_path)
+        spectograms.append(spectogram_path)
+    
+    return render_template('audio.html', hopespot_name=hopespot_name, audio_filename=audio_filename, audio_data=audio_data, audio_filename_no_ext=audio_filename_no_ext, clips=clips, spectograms=spectograms)
 
 # Utility functions
 def get_audio_files(hopespot_name):
@@ -348,6 +372,7 @@ def get_audio_files(hopespot_name):
     return audio_files
 
 def get_audio_files_hopespots(hopespot_name):
+    # Get all files within hopespots
     base_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', to_camel_case(hopespot_name), 'audio')
     if not os.path.exists(base_path):
         return []

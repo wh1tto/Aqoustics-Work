@@ -3,19 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ audio_filename }}</title>
+    <title>Processed Recording</title>
+    <style>
+        .data {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .data th, .data td {
+            border: 1px solid black;
+            padding: 8px;
+        }
+        body {
+            background-image: radial-gradient(circle, #2a2094, #281e9f, #251caa, #2119b5, #1c15c0);
+            height: 100vh;
+            overflow: auto;
+            color: white;
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
+        .centered {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .gain-slider {
+            width: 100%;
+        }
+        #submit-all {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #submit-all:hover {
+            background-color: #0056b3;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        a:link, a:visited {
+            color: pink;
+            background-color: transparent;
+            text-decoration: none;
+        }
+        .slideshow-container {
+            max-width: 1000px;
+            position: relative;
+            margin: auto;
+        }
+        .mySlides {
+            display: none;
+        }
+        .mySlides img {
+            width: 100%;
+            display: block;
+        }
+        .prev, .next {
+            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            width: auto;
+            margin-top: -22px;
+            padding: 16px;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            transition: 0.6s ease;
+            border-radius: 0 3px 3px 0;
+            user-select: none;
+        }
+        .next {
+            right: 0;
+            border-radius: 3px 0 0 3px;
+        }
+        .fade {
+            animation-name: fade;
+            animation-duration: 1.5s;
+        }
+        @keyframes fade {
+            from {opacity: .4} 
+            to {opacity: 1}
+        }
+        .slideshowText {
+            color: #f2f2f2;
+            font-size: 15px;
+            padding: 8px 12px;
+            position: absolute;
+            bottom: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll('audio').forEach(function(audioElement) {
+                var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                var source = audioCtx.createMediaElementSource(audioElement);
+                var gainNode = audioCtx.createGain();
+                source.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                var gainSlider = document.querySelector('input[data-audio-id="' + audioElement.id + '"]');
+                gainSlider.addEventListener('input', function() {
+                    gainNode.gain.value = this.value;
+                });
+            });
+
+            showSlides(slideIndex);
+        });
+
+        var slideIndex = 1;
+
+        function plusSlides(n) {
+            showSlides(slideIndex += n);
+        }
+
+        function currentSlide(n) {
+            showSlides(slideIndex = n);
+        }
+
+        function showSlides(n) {
+            var i;
+            var slides = document.getElementsByClassName("mySlides");
+            if (n > slides.length) {slideIndex = 1}
+            if (n < 1) {slideIndex = slides.length}
+            for (i = 0; i < slides.length; i++) {
+                slides[i].style.display = "none";
+            }
+            slides[slideIndex-1].style.display = "block";
+        }
+    </script>
 </head>
 <body>
-    <h1>{{ audio_filename }}</h1>
-    <p>Details for audio file {{ audio_filename }} in hopespot {{ hopespot_name }}</p>
-    <ul>
-        {% for key, value in audio_data.items() %}
-            <li>{{ key }}: {{ value }}</li>
+    <h1 style="text-align:center">Timestamps of Sounds Below 1000Hz</h1>
+    <div>
+        <table class="data">
+            <thead>
+                <tr>
+                    <th>Begin (s)</th>
+                    <th>End (s)</th>
+                    <th>Audio Clip</th>
+                    <th>Gain</th>
+                    <th>Download</th>
+                    <th>Correct?</th>
+                    <th>Hopespot</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Clips rows -->
+                {% for i in range(clips|length) %}
+                    <tr>
+                        <td>{{ audio_data['timestamps'][i]['start'] }}</td>
+                        <td>{{ audio_data['timestamps'][i]['end'] }}</td>
+                        <td class="centered">
+                            <audio controls id="audio-clip-{{ i }}">
+                                <source src="{{ url_for('static', filename='hopespots/' + hopespot_name + '/audio/' + audio_filename_no_ext + '/clip_' + i|string + '.wav') }}" type="audio/wav">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </td>
+                        <td>
+                            <input type="range" min="1" max="10" step="0.1" value="1" data-audio-id="audio-clip-{{ i }}" class="gain-slider">
+                        </td>
+                        <td>
+                            <a href="{{ url_for('static', filename='hopespots/' + hopespot_name + '/audio/' + audio_filename_no_ext + '/clip_' + i|string + '.wav') }}" download>
+                                <button>Download Clip</button>
+                            </a>
+                        </td>
+                        <td>
+                            <button>Yes</button>
+                            <button>No</button>
+                        </td>
+                        <td>
+                            <a href="{{ link }}">Link to {{ hopespot_name }} Hopespot</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="container">
+        <button type="button" onclick="location.href='{{ url_for('web.hopespot', hopespot_name=hopespot_name) }}'" id="submit-all">Back to Hopespot</button>
+    </div>
+
+    <div class="slideshow-container">
+        {% for i in range(spectograms|length) %}
+            <div class="mySlides fade">
+                <img src="{{ url_for('static', filename='hopespots/' + hopespot_name + '/audio/' + audio_filename_no_ext + '/clip_' + i|string + '_plot.png') }}" style="width:100%">
+                <div class="slideshowText">Spectrogram of Clip {{ i }}</div>
+            </div>
         {% endfor %}
-    </ul>
-    <audio controls>
-        <source src="{{ url_for('static', filename='hopespots/' ~ hopespot_name ~ '/audio/' ~ audio_filename) }}" type="audio/wav">
-        Your browser does not support the audio element.
-    </audio>
+        <a class="prev" onclick="plusSlides(-1)">&#10094;</a>
+        <a class="next" onclick="plusSlides(1)">&#10095;</a>
+    </div>
 </body>
 </html>
