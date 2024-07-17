@@ -340,7 +340,8 @@ def uploadMultiple():
                 json.dump(audio_data, f, indent=4)
 
         flash('Files successfully uploaded')
-        return redirect(url_for('web.hopespot', hopespot_name=location))
+        # TODO: Redirect to the correct page
+        return redirect(url_for('web.hopespots'))
 
     return render_template('uploadMultiple.html')
 
@@ -366,6 +367,8 @@ def result():
     # TODO: Do we want spectogram to permanently save to the folder or just display on the page? (storage vs processing time/overhead)
     # TODO: Add new results page for individual recordings instead of using the results page, change references and add voting functionality
     # TODO: Also add voting functionality for indiivudal clips 
+    
+    refactorClips(camel_case_location, filename)
     
     for file in os.listdir(audio_folder):
         if file.startswith('clip') and file.endswith('.wav'):
@@ -410,26 +413,39 @@ def audio(hopespot_name, audio_filename):
     hopespot_name_no_cc = hopespot_name
     hopespot_name = to_camel_case(hopespot_name)
     audio_data = get_audio_data(hopespot_name, audio_filename)
+    audio_filename_no_ext = os.path.splitext(audio_filename)[0]
+    
+    audio_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', hopespot_name, 'audio', audio_filename_no_ext)
+    
+    print("REFACTORING")
+    refactorClips(hopespot_name, audio_filename)
     
     if not audio_data:
         return "Audio file not found", 404
 
-    num_clips = len(audio_data['timestamps'])
+    spectograms = []
     
-    audio_filename_no_ext = os.path.splitext(audio_filename)[0]
+    # Create spectograms
+    for file in os.listdir(audio_folder):
+        if file.startswith('clip') and file.endswith('.wav'):
+            clip_path = os.path.join(audio_folder, file)
+            plot_path = os.path.join(audio_folder, f"{os.path.splitext(file)[0]}_plot.png")
+            plotstft(clip_path, plot_path)
+            relative_plot_path = f'hopespots/{hopespot_name}/audio/{audio_filename_no_ext}/{os.path.basename(plot_path)}'
+            spectograms.append(relative_plot_path)
+    
+    num_clips = len(audio_data['timestamps'])
     
     # Run loop over number of clips to retrieve the clip_0.wav, clip_1.wav, etc
     # Also add the path for the spectogram for each clip (instead of .wav, use _plot.png)
     
     # FIXME: Fix spectograms (wont always be in order 0-1-2-3-4, some may be 1-3-8-15-20)
     clips = []
-    spectograms = []
+    
     for i in range(num_clips):
         clip_filename = f"clip_{i}.wav"
         clip_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', hopespot_name, 'audio', audio_filename_no_ext, clip_filename)
-        spectogram_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', hopespot_name, 'audio', audio_filename_no_ext, f"clip_{i}_plot.png")
         clips.append(clip_path)
-        spectograms.append(spectogram_path)
     
     return render_template('audio.html', hopespot_name=hopespot_name, audio_filename=audio_filename, audio_data=audio_data, audio_filename_no_ext=audio_filename_no_ext, clips=clips, spectograms=spectograms, hopespot_name_no_cc=hopespot_name_no_cc)
 
@@ -644,7 +660,35 @@ def format_timestamp(seconds):
     td = timedelta(seconds=seconds)
     return str(td)
 
-def refactorClipNames():
-    # TODO: Function to refactor clip names to clip_0.wav, clip_1.wav, etc. for each audio file in a hopespot
-    # Some clip names are not in correct numbered order, refarctor so it goes 0,1,2,3 etc.
-    pass
+def refactorClips(location, filename):
+    # Construct the path to the folder
+    filename = os.path.splitext(filename)[0]
+    hopespot_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', location, 'audio', filename)
+    
+    if not os.path.exists(hopespot_dir):
+        print(f"Directory {hopespot_dir} does not exist.")
+        return
+
+    # Get all audio clip files in the folder that begin with "clip" and end with ".wav"
+    audio_files = [f for f in os.listdir(hopespot_dir) if os.path.isfile(os.path.join(hopespot_dir, f)) and f.startswith('clip') and f.endswith('.wav')]
+    
+    # Sort the files by their current name
+    audio_files.sort()
+
+    # First pass: rename to temporary names to avoid conflicts
+    for index, old_name in enumerate(audio_files):
+        temp_name = f"temp_{index}.wav"
+        old_file = os.path.join(hopespot_dir, old_name)
+        temp_file = os.path.join(hopespot_dir, temp_name)
+        os.rename(old_file, temp_file)
+        print(f"Temporarily renamed {old_file} to {temp_file}")
+
+    # Second pass: rename to final names
+    for index, temp_name in enumerate(audio_files):
+        temp_file = os.path.join(hopespot_dir, f"temp_{index}.wav")
+        new_name = f"clip_{index}.wav"
+        new_file = os.path.join(hopespot_dir, new_name)
+        os.rename(temp_file, new_file)
+        print(f"Renamed {temp_file} to {new_file}")
+
+    print(f"Refactoring complete for {location}/{filename}.")
