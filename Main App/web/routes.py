@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, session, Blueprint, current_app as app
+from flask import Flask, request, render_template, redirect, url_for, session, Blueprint, flash, current_app as app
 import os
 import pandas as pd
 import soundfile as sf
@@ -257,6 +257,97 @@ def upload_file():
         
         return redirect(url_for('web.result'))
 
+@web_bp.route('/uploadMultiple', methods=['GET', 'POST'])
+def uploadMultiple():
+    if request.method == 'POST':
+        location = request.form.get('location')
+        filename = request.form.get('filename')
+        counter = 0
+
+        if not location:
+            flash('Location is required.')
+            return redirect(request.url)
+
+        if 'files[0]' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        
+        files = [file for key, file in request.files.items() if key.startswith('files')]
+        if not files:
+            flash('No selected file')
+            return redirect(request.url)
+
+        print(f"Processing files for location: {location}, filename: {filename}")
+        print(f"Files: {files}")
+
+        for file in files:
+            counter += 1
+            all_timestamps = []
+
+            file_extension = os.path.splitext(file.filename)[1]
+            if not file_extension:
+                file_extension = '.wav'  # Default to .wav if no extension provided
+
+            camel_case_location = to_camel_case(location)
+            if not camel_case_location:
+                flash('Invalid location format.')
+                return redirect(request.url)
+                
+            full_filename = f"{filename}_{counter}{file_extension}"
+            dir_filename = f"{filename}_{counter}"
+
+            # Create directory path using the filename
+            hopespot_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_location)
+            audio_dir = os.path.join(hopespot_dir, 'audio', dir_filename)
+            os.makedirs(audio_dir, exist_ok=True)
+
+            # Initialize audio_data.json if it does not exist
+            audio_data_path = os.path.join(hopespot_dir, 'audio_data.json')
+            if not os.path.exists(audio_data_path):
+                with open(audio_data_path, 'w') as f:
+                    json.dump({}, f)
+
+            file_path = os.path.join(audio_dir, full_filename)
+            file.save(file_path)
+            timestamps = process_audio(file_path)
+            all_timestamps.append(timestamps)
+
+            # Load or initialize audio_data.json from the hopespot folder
+            if os.path.exists(audio_data_path):
+                try:
+                    with open(audio_data_path, 'r') as f:
+                        audio_data = json.load(f)
+                except json.JSONDecodeError:
+                    # Handle empty or corrupted JSON file
+                    audio_data = {}
+            else:
+                audio_data = {}
+
+            # Convert timestamps to the specified format
+            formatted_timestamps = [
+                {"start": format_timestamp(row['begin']), "end": format_timestamp(row['end']), "note": "note", "score": "3"}
+                for _, row in timestamps.iterrows()
+            ]
+
+            # Update the JSON structure
+            if full_filename not in audio_data:
+                audio_data[full_filename] = {"timestamps": formatted_timestamps, "votes": 0}
+            else:
+                audio_data[full_filename]["timestamps"].extend(formatted_timestamps)
+
+            # Write back to the audio_data.json file
+            with open(audio_data_path, 'w') as f:
+                json.dump(audio_data, f, indent=4)
+
+        flash('Files successfully uploaded')
+        return redirect(url_for('web.hopespot', hopespot_name=location))
+
+    return render_template('uploadMultiple.html')
+
+@web_bp.route('/uploadMultiplePage')
+def uploadMultiplePage():
+    return render_template('uploadMultiple.html')
+
 @web_bp.route('/result')
 def result():
     all_timestamps = [pd.DataFrame(data) for data in session.get('all_timestamps', [])]
@@ -296,8 +387,8 @@ def hopespots():
         clips_count = len(get_audio_files_hopespots(name))
         hopespots.append({'name': name, 'clips_count': clips_count})
     
-    hopespots.sort(key=lambda x: x['name'])  # Initially sort by name
-    
+    hopespots.sort(key=lambda x: x['clips_count'], reverse=True) #Initially sort by clips count
+
     return render_template('hopespots.html', hopespots=hopespots)
 
 # Route to display details for a specific hopespot
@@ -552,3 +643,8 @@ def to_camel_case(s):
 def format_timestamp(seconds):
     td = timedelta(seconds=seconds)
     return str(td)
+
+def refactorClipNames():
+    # TODO: Function to refactor clip names to clip_0.wav, clip_1.wav, etc. for each audio file in a hopespot
+    # Some clip names are not in correct numbered order, refarctor so it goes 0,1,2,3 etc.
+    pass

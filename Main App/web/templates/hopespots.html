@@ -105,7 +105,7 @@
                 <td>{{ hopespot.name }}</td>
                 <td>{{ hopespot.clips_count }}</td>
                 <td><input type="checkbox" name="favorite"></td>
-                <td><a href="{{ url_for('web.hopespot', name=hopespot.name) }}" class="button">View Details</a></td>
+                <td><a href="{{ url_for('web.hopespot', hopespot_name=hopespot.name) }}" class="button">View Details</a></td>
             </tr>
             {% endfor %}
         </tbody>
