@@ -476,7 +476,7 @@ def load_audio_data(hopespot_name):
 # Function to save audio data to the JSON file
 def save_audio_data(hopespot_name, audio_data):
     hopespot_name = to_camel_case(hopespot_name)
-    path = os.path.join('static', 'hopespots', hopespot_name, 'audio', 'audio_data.json')
+    path = os.path.join('static', 'hopespots', hopespot_name, 'audio_data.json')
     with open(path, 'w') as file:
         json.dump(audio_data, file, indent=4)
 
