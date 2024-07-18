@@ -16,7 +16,6 @@
             background: rgb(0,8,37);
             background: radial-gradient(circle, rgba(0,8,37,1) 0%, rgba(40,18,164,1) 51%, rgba(18,27,148,1) 60%, rgba(28,56,187,1) 65%, rgba(16,41,175,1) 68%, rgba(60,30,196,1) 78%, rgba(0,8,37,1) 90%); 
             height: 100vh;
-            overflow: hidden;
             color: white;
             font-family: Arial, sans-serif;
             position: relative;
@@ -52,9 +51,14 @@
             font-size: 16px;
             cursor: pointer;
         }
-
         #submit-all:hover, #hopespots-button:hover {
             background-color: #0056b3;
+        }
+
+        .buttons-container {
+            display: flex;
+            gap: 10px; /* Add space between buttons */
+            margin-top: 20px;
         }
 
         .fish {
@@ -229,7 +233,7 @@
     -->
 
 <body>
-    <h1 style="text-align:center">Upload Audio File</h1>
+    <h1 style="text-align:center">Upload Single Audio File</h1>
     <div class="container">
         <form action="{{ url_for('web.upload_file') }}" class="dropzone" id="myDropzone">
             <div class="dz-message">Drop audio files here or click to upload</div>
@@ -241,8 +245,10 @@
             </svg>
         </form>
         <button type="button" id="submit-all">Upload File</button>
-        <button type="button" id="hopespots-button" onclick="window.location.href='{{ url_for('web.hopespots') }}'">View All Hopespots</button>
-        <button type="button" id="hopespots-button" onclick="window.location.href='{{ url_for('web.uploadMultiple') }}'">Upload Multiple Files</button>
+        <div class="buttons-container">
+            <button type="button" id="hopespots-button" onclick="window.location.href='{{ url_for('web.hopespots') }}'">View All Hopespots</button>
+            <button type="button" id="hopespots-button" onclick="window.location.href='{{ url_for('web.uploadMultiple') }}'">Upload Multiple Files</button>
+        </div>
     </div>
 </body>
 </html>

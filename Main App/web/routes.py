@@ -439,7 +439,6 @@ def audio(hopespot_name, audio_filename):
     # Run loop over number of clips to retrieve the clip_0.wav, clip_1.wav, etc
     # Also add the path for the spectogram for each clip (instead of .wav, use _plot.png)
     
-    # FIXME: Fix spectograms (wont always be in order 0-1-2-3-4, some may be 1-3-8-15-20)
     clips = []
     
     for i in range(num_clips):
