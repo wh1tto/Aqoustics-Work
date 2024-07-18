@@ -23,7 +23,7 @@
             background-color: #4CAF50;
             color: white;
         }
-        .button {
+        .button, .vote-button {
             background-color: #4CAF50;
             border: none;
             color: white;
@@ -35,7 +35,34 @@
             margin: 4px 2px;
             cursor: pointer;
         }
+        .vote-button {
+            width: 30px;
+            height: 30px;
+        }
     </style>
+    <script>
+        function updateVotes(hopespotName, filename, change) {
+            fetch('/update_votes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ hopespot_name: hopespotName, filename: filename, change: change })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`votes-${filename}`).textContent = data.newVotes;
+                } else {
+                    alert('Failed to update votes.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating votes.');
+            });
+        }
+    </script>
 </head>
 <body>
     <h1>{{ hopespot_name }} Hopespot</h1>
@@ -48,14 +75,21 @@
                 <th>Filename</th>
                 <th>Votes</th>
                 <th>Actions</th>
+                <th>Vote</th>
             </tr>
         </thead>
         <tbody>
             {% for audio_file in audio_files %}
                 <tr>
                     <td>{{ audio_file.filename }}</td>
-                    <td>{{ audio_file.votes }}</td>
-                    <td> <a href="{{ url_for('web.audio', hopespot_name=hopespot_name, audio_filename=audio_file.filename) }}" class="button">View Recording</a> </td>
+                    <td id="votes-{{ audio_file.filename }}">{{ audio_file.votes }}</td>
+                    <td> 
+                        <a href="{{ url_for('web.audio', hopespot_name=hopespot_name, audio_filename=audio_file.filename) }}" class="button">View Recording</a>
+                    </td>
+                    <td>
+                        <button class="vote-button" onclick="updateVotes('{{ hopespot_name }}', '{{ audio_file.filename }}', 1)">+</button>
+                        <button class="vote-button" onclick="updateVotes('{{ hopespot_name }}', '{{ audio_file.filename }}', -1)">-</button>
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>

@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, session, Blueprint, flash, current_app as app
+from flask import Flask, request, render_template, redirect, url_for, session, Blueprint, jsonify, flash, current_app as app
 import os
 import pandas as pd
 import soundfile as sf
@@ -407,6 +407,24 @@ def hopespot(hopespot_name):
     
     return render_template('hopespot.html', hopespot_name=hopespot_name, link=hopespot_link, audio_files=audio_files)
 
+@web_bp.route('/update_votes', methods=['POST'])
+def update_votes():
+    data = request.json
+    hopespot_name = data['hopespot_name']
+    filename = data['filename']
+    change = data['change']
+    
+    audio_data = load_audio_data(hopespot_name)
+    
+    if filename in audio_data:
+        audio_file = audio_data[filename]
+        if -1 <= change <= 1:
+            audio_file['votes'] += change
+            save_audio_data(hopespot_name, audio_data)
+            return jsonify(success=True, newVotes=audio_file['votes'])
+    
+    return jsonify(success=False, message="File not found or invalid vote change")
+
 # Route to display details for a specific audio recording
 @web_bp.route('/hopespot/<hopespot_name>/audio/<audio_filename>')
 def audio(hopespot_name, audio_filename):
@@ -449,6 +467,19 @@ def audio(hopespot_name, audio_filename):
     return render_template('audio.html', hopespot_name=hopespot_name, audio_filename=audio_filename, audio_data=audio_data, audio_filename_no_ext=audio_filename_no_ext, clips=clips, spectograms=spectograms, hopespot_name_no_cc=hopespot_name_no_cc)
 
 # Utility functions
+def load_audio_data(hopespot_name):
+    hopespot_name = to_camel_case(hopespot_name)
+    path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', hopespot_name, 'audio_data.json')
+    with open(path, 'r') as file:
+        return json.load(file)
+
+# Function to save audio data to the JSON file
+def save_audio_data(hopespot_name, audio_data):
+    hopespot_name = to_camel_case(hopespot_name)
+    path = os.path.join('static', 'hopespots', hopespot_name, 'audio', 'audio_data.json')
+    with open(path, 'w') as file:
+        json.dump(audio_data, file, indent=4)
+
 def get_audio_files(hopespot_name):
     camel_case_hopespot_name = to_camel_case(hopespot_name)
     base_path = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', camel_case_hopespot_name, 'audio')
