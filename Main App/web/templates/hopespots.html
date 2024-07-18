@@ -29,8 +29,53 @@
             margin: 4px 2px;
             cursor: pointer;
         }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .dropdown-content a:hover {background-color: #f1f1f1;}
+        .dropdown:hover .dropdown-content {display: block;}
+        .dropdown:hover .dropbtn {background-color: #3e8e41;}
     </style>
     <script>
+        function sortTableByFavoritesAndClips(table) {
+            const tBody = table.tBodies[0];
+            const rows = Array.from(tBody.querySelectorAll("tr"));
+
+            const sortedRows = rows.sort((a, b) => {
+                const aFavorite = a.querySelector('input[type="checkbox"]').checked;
+                const bFavorite = b.querySelector('input[type="checkbox"]').checked;
+                const aClips = parseInt(a.querySelector("td:nth-child(2)").textContent.trim());
+                const bClips = parseInt(b.querySelector("td:nth-child(2)").textContent.trim());
+
+                if (aFavorite === bFavorite) {
+                    return bClips - aClips;
+                } else {
+                    return aFavorite ? -1 : 1;
+                }
+            });
+
+            while (tBody.firstChild) {
+                tBody.removeChild(tBody.firstChild);
+            }
+
+            tBody.append(...sortedRows);
+        }
+
         function sortTableByColumn(table, column, asc = true) {
             const dirModifier = asc ? 1 : -1;
             const tBody = table.tBodies[0];
@@ -71,25 +116,40 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             const table = document.querySelector("table");
-            let sortAlphabetical = true;
 
-            document.querySelector("#sort-button").addEventListener("click", () => {
-                if (sortAlphabetical) {
-                    sortTableByNumber(table, 1, true);
-                    sortAlphabetical = false;
-                    document.querySelector("#sort-button").textContent = "Sort Alphabetically";
-                } else {
-                    sortTableByColumn(table, 0, true);
-                    sortAlphabetical = true;
-                    document.querySelector("#sort-button").textContent = "Sort by Number of Clips";
+            document.querySelector("#sort-alphabetical").addEventListener("click", () => {
+                sortTableByColumn(table, 0, true);
+            });
+
+            document.querySelector("#sort-clips").addEventListener("click", () => {
+                sortTableByNumber(table, 1, true);
+            });
+
+            document.querySelector("#sort-favorites").addEventListener("click", () => {
+                sortTableByFavoritesAndClips(table);
+            });
+
+            table.addEventListener("change", (event) => {
+                if (event.target.type === "checkbox") {
+                    sortTableByFavoritesAndClips(table);
                 }
             });
+
+            // Initial sort to ensure favorites are at the top
+            sortTableByFavoritesAndClips(table);
         });
     </script>
 </head>
 <body>
     <h1>Hopespot List</h1>
-    <button id="sort-button" class="button">Sort by Number of Clips</button>
+    <div class="dropdown">
+        <button class="button dropbtn">Sort Options</button>
+        <div class="dropdown-content">
+            <a href="#" id="sort-alphabetical">Sort Alphabetically</a>
+            <a href="#" id="sort-clips">Sort by Number of Clips</a>
+            <a href="#" id="sort-favorites">Sort by Favorites</a>
+        </div>
+    </div>
     <table>
         <thead>
             <tr>
@@ -104,7 +164,7 @@
             <tr>
                 <td>{{ hopespot.name }}</td>
                 <td>{{ hopespot.clips_count }}</td>
-                <td><input type="checkbox" name="favorite"></td>
+                <td><input type="checkbox" name="favorite" {% if hopespot.favorite %}checked{% endif %}></td>
                 <td><a href="{{ url_for('web.hopespot', hopespot_name=hopespot.name) }}" class="button">View Details</a></td>
             </tr>
             {% endfor %}
