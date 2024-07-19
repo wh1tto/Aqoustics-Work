@@ -425,6 +425,30 @@ def update_votes():
     
     return jsonify(success=False, message="File not found or invalid vote change")
 
+@web_bp.route('/update_clip_score', methods=['POST'])
+def update_clip_score():
+    data = request.json
+    hopespot_name = data['hopespot_name']
+    filename = data['filename']
+    clip_index = int(data['clip_index'])
+    change = int(data['change'])
+    
+    audio_data = load_audio_data(hopespot_name)
+    
+    print(f"Updating clip score for {filename}, clip {clip_index} by {change}")
+    # Add extension to filename
+    filename = f"{filename}.wav"
+    
+    if filename in audio_data and 0 <= clip_index < len(audio_data[filename]['timestamps']):
+        score = int(audio_data[filename]['timestamps'][clip_index].get('score', 0))
+        score += change
+        audio_data[filename]['timestamps'][clip_index]['score'] = score
+        save_audio_data(hopespot_name, audio_data)
+        return jsonify(success=True, newScore=score)
+    
+    return jsonify(success=False, message="File or clip not found or invalid change")
+
+
 # Route to display details for a specific audio recording
 @web_bp.route('/hopespot/<hopespot_name>/audio/<audio_filename>')
 def audio(hopespot_name, audio_filename):
@@ -432,6 +456,7 @@ def audio(hopespot_name, audio_filename):
     hopespot_name = to_camel_case(hopespot_name)
     audio_data = get_audio_data(hopespot_name, audio_filename)
     audio_filename_no_ext = os.path.splitext(audio_filename)[0]
+    rename_audio_extensions(hopespot_name_no_cc)
     
     audio_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'hopespots', hopespot_name, 'audio', audio_filename_no_ext)
     
@@ -477,6 +502,8 @@ def load_audio_data(hopespot_name):
 def save_audio_data(hopespot_name, audio_data):
     hopespot_name = to_camel_case(hopespot_name)
     path = os.path.join('static', 'hopespots', hopespot_name, 'audio_data.json')
+    print(f"Saving audio data to {path}")
+    # print(f"Audio data content: {json.dumps(audio_data, indent=4)}")
     with open(path, 'w') as file:
         json.dump(audio_data, file, indent=4)
 
@@ -722,3 +749,19 @@ def refactorClips(location, filename):
         print(f"Renamed {temp_file} to {new_file}")
 
     print(f"Refactoring complete for {location}/{filename}.")
+    
+def rename_audio_extensions(hopespot_name):
+    hopespot_name = to_camel_case(hopespot_name)
+    base_path = os.path.join('static', 'hopespots', hopespot_name, 'audio')
+    
+    if not os.path.exists(base_path):
+        print(f"The directory {base_path} does not exist.")
+        return
+    
+    for root, dirs, files in os.walk(base_path):
+        for file in files:
+            if file.endswith('.WAV'):
+                old_file_path = os.path.join(root, file)
+                new_file_path = os.path.join(root, file[:-4] + '.wav')
+                os.rename(old_file_path, new_file_path)
+                print(f"Renamed {old_file_path} to {new_file_path}")

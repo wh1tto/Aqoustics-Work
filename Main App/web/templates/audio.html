@@ -118,6 +118,18 @@
             });
 
             showSlides(slideIndex);
+
+            // Add event listeners to Yes and No buttons
+            document.querySelectorAll('.vote-button').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const hopespotName = "{{ hopespot_name }}";
+                    const filename = "{{ audio_filename_no_ext }}";
+                    const clipIndex = this.getAttribute('data-clip-index');
+                    const change = this.getAttribute('data-change');
+
+                    updateVote(hopespotName, filename, clipIndex, change);
+                });
+            });
         });
 
         var slideIndex = 1;
@@ -139,6 +151,34 @@
                 slides[i].style.display = "none";
             }
             slides[slideIndex-1].style.display = "block";
+        }
+
+        function updateVote(hopespotName, filename, clipIndex, change) {
+            fetch('/update_clip_score', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    hopespot_name: hopespotName,
+                    filename: filename,
+                    clip_index: clipIndex,
+                    change: change
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const scoreElement = document.getElementById(`score-${clipIndex}`);
+                    scoreElement.textContent = data.newScore;
+                    console.log("Vote updated successfully.");
+                } else {
+                    console.error("Failed to update vote.");
+                }
+            })
+            .catch(error => {
+                console.error("Error updating vote:", error);
+            });
         }
     </script>
 </head>
@@ -178,8 +218,9 @@
                             </a>
                         </td>
                         <td>
-                            <button>Yes</button>
-                            <button>No</button>
+                            <button class="vote-button" data-clip-index="{{ i }}" data-change="1">Yes</button>
+                            <button class="vote-button" data-clip-index="{{ i }}" data-change="-1">No</button>
+                            <span id="score-{{ i }}">Score: {{ audio_data['timestamps'][i]['score'] }}</span>
                         </td>
                         <td>
                             <a href="{{ link }}">Link to {{ hopespot_name }} Hopespot</a>

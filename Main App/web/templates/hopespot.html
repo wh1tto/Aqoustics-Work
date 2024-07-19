@@ -39,6 +39,18 @@
             width: 30px;
             height: 30px;
         }
+        .back-button {
+            background-color: #ff4500;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 20px 0;
+            cursor: pointer;
+        }
     </style>
     <script>
         function updateVotes(hopespotName, filename, change) {
@@ -94,5 +106,8 @@
             {% endfor %}
         </tbody>
     </table>
+    <div style="text-align: center;">
+        <button class="back-button" onclick="window.location.href='{{ url_for('web.hopespots') }}'">Back to Hopespots</button>
+    </div>
 </body>
 </html>
