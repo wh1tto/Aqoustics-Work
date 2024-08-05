@@ -15,6 +15,8 @@ from numpy.lib import stride_tricks
 import json
 from datetime import timedelta
 
+# TODO: Connect DB + Do login
+
 web_bp = Blueprint('web', __name__, template_folder='templates', static_folder='static')
 
 hopespotLinks = [
@@ -257,6 +259,7 @@ def upload_file():
         
         return redirect(url_for('web.result'))
 
+# TODO: Put upload multiple and upload single into same method. If single file, go to normal result page, if multiple go to the relevant hopespot
 @web_bp.route('/uploadMultiple', methods=['GET', 'POST'])
 def uploadMultiple():
     if request.method == 'POST':
@@ -340,7 +343,7 @@ def uploadMultiple():
                 json.dump(audio_data, f, indent=4)
 
         flash('Files successfully uploaded')
-        # TODO: Redirect to the correct page
+        # TODO: Redirect to the correct hopespot page
         return redirect(url_for('web.hopespots'))
 
     return render_template('uploadMultiple.html')
@@ -365,8 +368,7 @@ def result():
     # Create a spectogram for each new clip created, appending the same number as in file name (clip_0.wav, clip_1.wav, etc.)
     # Save the plot to the same folder as the clip
     # TODO: Do we want spectogram to permanently save to the folder or just display on the page? (storage vs processing time/overhead)
-    # TODO: Add new results page for individual recordings instead of using the results page, change references and add voting functionality
-    # TODO: Also add voting functionality for indiivudal clips 
+    # TODO: Add new results page for individual recordings instead of using the results page
     
     refactorClips(camel_case_location, filename)
     
